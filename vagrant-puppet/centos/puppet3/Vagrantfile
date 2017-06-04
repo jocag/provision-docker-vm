@@ -1,0 +1,38 @@
+Vagrant.require_version '>= 1.8.0'
+VAGRANTFILE_API_VERSION = '2'
+
+ENV['VAGRANT_DEFAULT_PROVIDER'] = 'docker'
+# Comment this line out only if you have pulled this image from Docker Hub
+#ENV['DOCKER_IMAGE'] = 'jocag/vagrant-puppet:puppet3_centos'
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  config.vm.define 'dummy_box' do |dummy_box|
+    dummy_box.vm.provider ENV['VAGRANT_DEFAULT_PROVIDER'] do |d|
+      if ENV['DOCKER_IMAGE'] then
+        d.image = ENV['DOCKER_IMAGE']
+      else
+        d.build_dir = '.'
+        d.name = 'vagrant-puppet3-centos'
+      end
+      d.has_ssh = true
+      d.create_args = [ '--privileged', '-v', '/sys/fs/cgroup:/sys/fs/cgroup:ro' ]
+    end
+
+    dummy_box.vm.host_name = 'vagrant-puppet3'
+    dummy_box.vm.synced_folder './puppet', '/etc/puppetlabs/code'
+
+    # Puppet Provision
+    dummy_box.vm.provision 'puppet', run: 'always' do |puppet|
+      puppet.manifests_path = 'puppet/manifests'
+      puppet.manifest_file = 'site.pp'
+      puppet.module_path = 'puppet/modules'
+      puppet.hiera_config_path = 'puppet/hiera.yaml'
+      puppet.options = '--verbose --parser=future --debug'
+      puppet.facter = {
+        'vagrant' => '1',
+        'env' => 'dev'
+      }
+    end
+  end
+end

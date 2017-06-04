@@ -1,0 +1,36 @@
+Vagrant.require_version '>= 1.8.0'
+VAGRANTFILE_API_VERSION = '2'
+
+ENV['VAGRANT_DEFAULT_PROVIDER'] = 'docker'
+# Comment this line out only if you have pulled this image from Docker Hub
+#ENV['DOCKER_IMAGE'] = 'jocag/vagrant-ansible:ubuntu16.04'
+ENV['ANSIBLE_VERSION'] = '2.2.2.0'
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  config.vm.define 'dummy_box' do |dummy_box|
+    dummy_box.vm.provider ENV['VAGRANT_DEFAULT_PROVIDER'] do |d|
+      if ENV['DOCKER_IMAGE'] then
+        d.image = ENV['DOCKER_IMAGE']
+      else
+        d.build_dir = '.'
+        d.name = 'vagrant-ansible-ubuntu'
+      end
+      d.has_ssh = true
+      d.create_args = [ '--privileged', '-v', '/sys/fs/cgroup:/sys/fs/cgroup:ro' ]
+    end
+
+    dummy_box.vm.host_name = 'vagrant-ansible'
+    dummy_box.vm.synced_folder '.', '/etc/ansible/',
+      exclude: ['.git/', '.gitignore', '.travis.yml']
+
+    # Ansible provision
+    dummy_box.vm.provision 'ansible_local', run: 'always' do |ansible|
+      ansible.provisioning_path = '/etc/ansible/'
+      ansible.tmp_path = '/etc/ansible/tmp'
+      ansible.version  = ENV['ANSIBLE_VERSION']
+      ansible.verbose  = 'vvvv'
+      ansible.playbook = 'playbooks/playbook.yml'
+    end
+  end
+end
