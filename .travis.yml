@@ -1,0 +1,31 @@
+language: ruby
+sudo: required
+services:
+    - docker
+
+before_script:
+    - docker info
+    - docker version
+
+    - docker build -t ansible-vagrant:centos -f vagrant-ansible/centos/Dockerfile .
+    - docker build -t ansible-vagrant:ubuntu -f vagrant-ansible/ubuntu/Dockerfile .
+    - docker build -t puppet3-vagrant:centos -f vagrant-puppet/centos/puppet3/Dockerfile .
+    - docker build -t puppet3-vagrant:ubuntu -f vagrant-puppet/ubuntu/puppet3/Dockerfile .
+    - docker build -t puppet4-vagrant:centos -f vagrant-puppet/centos/puppet4/Dockerfile .
+    - docker build -t puppet4-vagrant:ubuntu -f vagrant-puppet/ubuntu/puppet4/Dockerfile .
+
+script:
+    - docker run --name ansible_centos --rm -it ansible-vagrant:centos /bin/bash -c "ansible --version" vagrant
+    - docker run --name ansible_centos --rm -it ansible-vagrant:ubuntu /bin/bash -c "ansible --version" vagrant
+    - docker run --name puppet3_centos --rm -it puppet3-vagrant:centos /bin/bash -c "puppet status service" vagrant
+    - docker run --name puppet3_ubuntu --rm -it puppet3-vagrant:ubuntu /bin/bash -c "puppet status service" vagrant
+    - docker run --name puppet4_centos --rm -it puppet4-vagrant:centos /bin/bash -c "puppet status" vagrant
+    - docker run --name puppet4_ubuntu --rm -it puppet4-vagrant:ubuntu /bin/bash -c "puppet status" vagrant
+
+notifications:
+  slack:
+    rooms:
+      - secure: "K9Yqe4sHDV9mSlYs/iN1EO0NJaNEYrwNwiHDrLzCHbHdBoTNaa5b+UJ5F7+xleN4qGIyxS9tyGaZgCDEGsDBGUsiCbPU7b9NYz3p7IG2xKLie6J4dwgsbVC8Iymr/dRcUC7jqLLEYWMf6loVPk+v+y4V0dqEim/ThWBrWuKIZ6UzXZXRe/mMIZg/QzjbAtOxzvi+QbEgNL8OEJfQ0OHiuqoWw/WYb5gG4Dv8fhjesWwGFGtUhkskem7vl+fRLYqoZDZe4rEB37yVkuFkzfl0+ialquIoNX3bNo0b8LHPMbitgYhC/PtvaWDPlOJMA9axeC9DdZ0uht/JsEXxil9HsDX8GYfo6CIgOF4KJYAMDiT3UM4IeHwyAH9CddETvWrAobGYLCUYXpk0I1cr+dxvZjNCPaGzwCtwVecz8u3NusBsx1SUKKLO9aaax/nVQ4opswO0wKgCTn24ASbXVGPUWXJj+tE2ze+bkGhomhmzjKqRJocgv4KFworzQPM1arl2PMnC0qqvWthZYVh4tdHaiLp0eAdVMezi0p1N3alZRsrq0J4KhEWvy3xgkZR1SA17Qnzw65tkg4a/j9vlZiBRb6VuQZdXjfP/O4+dfretGDF2rFVaW1EHQMHnPvECg3s71Wlp7w3+o1gcVcaGluqWL0ilE1iWlFelV7iCn7rjiYM="
+    on_pull_requests: true
+    on_success: never
+    on_failure: always
